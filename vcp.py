@@ -213,12 +213,13 @@ def file_multifunction(file_source: str, file_action: str):
     hlib_var = (getattr(hashlib, args.hash)())
     file_rtime, file_wtime, file_size, hash_time, hash_hex = 0, 0, 0, 0, ''
     try:
+        read_blocks = args.blocksize * options.BLOCK_SIZE_FACTOR
         # get the size of the file copied or read
         f_info = os.stat(file_source, follow_symlinks=False)
         file_size = f_info.st_size
         file_loop = 0
-        read_blocks = args.blocksize * options.BLOCK_SIZE_FACTOR
         f_loops = ceil(file_size / read_blocks)
+        update_loop = 1 if f_loops < 100 else int(f_loops / 100)
         # target output variable
         t_o = 'wb' if file_action == 'copy' else 'rb'
         # fr is file read, fw is file write, fw open but ignored on read
@@ -250,10 +251,11 @@ def file_multifunction(file_source: str, file_action: str):
                     file_wtime += (fw_stop - fw_start)
                 # loop and stdout print a status of the current file processing
                 file_loop += 1
-                if args.verbose == 3:
-                    sys.stdout.write(f'\u001b[1000D'
-                                     f'{(file_loop / f_loops) * 100:.0f}% | '
-                                     f'{file_source}')
+                if file_loop % update_loop == 0:
+                    bp([f'\u001b[1000D{(file_loop / f_loops) * 100:.0f}%',
+                        Ct.BBLUE, ' | ', Ct.A, f'{file_source}', Ct.GREEN],
+                        inl=1, num=0, fls=1)
+            bp(['', Ct.A])
         # convert the hash to hexadecimal
         hh_start = time.monotonic()
         if 'shake' in args.hash:

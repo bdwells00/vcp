@@ -4,7 +4,7 @@ __license__ = 'MIT'
 __origin_date__ = '2021-11-18'
 __prog__ = 'vcp.py'
 __purpose__ = 'Copy contents of one folder to another with hash validation'
-__version__ = '0.7.0'
+__version__ = '0.7.1'
 __version_date__ = '2021-12-02'
 __version_info__ = tuple(int(i) for i in __version__.split('.') if i.isdigit())
 
