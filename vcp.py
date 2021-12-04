@@ -8,91 +8,11 @@ from math import ceil
 import os
 import sys
 import time
-from bp import bp, Ct
-import options
+from modules.bp import bp
+from modules.ct import Ct
+from modules.decimals import decimal_notation
+import modules.options as options
 START_PROG_TIME = time.monotonic()
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def validate_and_process_args(h_list: list):
-    """Validate and process the cli args before executing main()."""
-    bp([f'entered validate_and_process_args({h_list})', Ct.BMAGENTA], veb=3)
-    bp(['confirm the length and blocksize variables are within set limits',
-        Ct.BMAGENTA], veb=3)
-    if args.length < 1 or args.length > 128:
-        bp([f'"--length {args.length}" invalid. Length must be between (and '
-            'including) 1 and 128.', Ct.RED], erl=2)
-        sys.exit(1)
-    if args.blocksize < 1 or args.blocksize > 100000000:
-        bp([f'"--blocksize {args.blocksize}" invalid. Length must between (and'
-            ' including) 1 and 100000000.', Ct.RED], erl=2)
-        sys.exit(1)
-    bp(['print available hashes and exit if requested', Ct.BMAGENTA], veb=3)
-    if args.available:
-        bp(['Available:\nHash:\t\tBlock size:\tDigest Length:\tHex Length:',
-            Ct.A])
-        for i in h_list:
-            if 'shake' not in i:
-                bp([f'{i:<16s}', Ct.RED,
-                    f'{getattr(hashlib, i)().block_size:<16}'
-                    f'{getattr(hashlib, i)().digest_size:<16}'
-                    f'{2 * getattr(hashlib, i)().digest_size:<16}', Ct.BBLUE],
-                    num=0)
-            else:
-                bp([f'{i:<16s}', Ct.RED,
-                    f'{getattr(hashlib, i)().block_size:<16}{args.length:<16}'
-                    f'{2 * args.length:<16}', Ct.BBLUE], num=0)
-        sys.exit(0)
-    # validate source and target paths
-    if args.source:
-        if not os.path.isdir(args.source):
-            bp([f'"--source {args.source}" does not exist.', Ct.RED], erl=2)
-            sys.exit(1)
-    else:
-        bp(['source path not provided.', Ct.RED], erl=2)
-        sys.exit(1)
-    if args.target:
-        if not os.path.isdir(args.target):
-            bp([f'"--target {args.target}" does not exist.', Ct.RED], erl=2)
-            sys.exit(1)
-    else:
-        bp(['target path not provided.', Ct.RED], erl=2)
-        sys.exit(1)
-    if args.source == args.target:
-        bp(['source and target cannot be the same.', Ct.RED], erl=2)
-        sys.exit(1)
-
-    return
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def decimal_notation(size: int, accuracy=2, notation=0):
-    """Decimal Notation: take an integer, convert it to a string with the
-    requested decimal accuracy, and append either single (default), double,
-    or full word character notation.
-
-    Args:
-        - size (int): the size to convert
-        - accuracy (int): how many decimal places to keep (default=2)
-        - precision (int): how many characters to return denoting multiplier
-
-    Returns:
-        - [tuple]: 0 = original size int unmodified; 1 = string for printing
-    """
-    size_dict = {
-        1: ['B', 'B', 'bytes'],
-        1000: ['k', 'kB', 'kilobytes'],
-        1000000: ['M', 'MB', 'megabytes'],
-        1000000000: ['G', 'GB', 'gigabytes'],
-        1000000000000: ['T', 'TB', 'terabytes']
-    }
-    return_size_str = ''
-    for key, value in size_dict.items():
-        if (size / key) < 1000:
-            return_size_str = f'{size / key:,.{accuracy}f} {value[notation]}'
-            break
-
-    return size, return_size_str
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -380,19 +300,24 @@ def main():
 
     except KeyboardInterrupt:
         bp(['Ctrl+C pressed...\n', Ct.RED], erl=2)
+        sys.exit(1)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 if __name__ == '__main__':
 
+    # ~~~ #         title section
+    bp([f'{options.ver}: {options.purpose}\n', Ct.BBLUE])
+    # ~~~ #         args section
+    args = options.args
     # create list of available hash algorithms
     hash_list = [i for i in sorted(hashlib.algorithms_guaranteed)]
-    # make args global
-    args = options.args
-    bp([f'{options.ver}: {options.__purpose__}\n', Ct.BBLUE])
-    bp([f'calling validate_and_process_args({hash_list}) and assigning back to'
-        ' hash_list. Allows for all or just one hash.', Ct.BMAGENTA], veb=2,
-        num=0)
-    hash_list = validate_and_process_args(hash_list)
+    bp([f'calling options.execute_args_validation({hash_list}).', Ct.BMAGENTA],
+        veb=2, num=0)
+    arg_val = options.execute_args_validation(hash_list)
+    if arg_val[0] != 2:
+        bp([f'{arg_val[1]}', arg_val[2]], num=arg_val[3], erl=[arg_val[4]])
+        sys.exit(arg_val[0])
+    # ~~~ #         main section
     bp([f'calling main({hash_list}).', Ct.BMAGENTA], veb=2, num=0)
     main()
