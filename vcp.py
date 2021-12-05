@@ -1,202 +1,21 @@
 #!/usr/bin/python3-64 -X utf8
 
 
-from collections import defaultdict as dd
 from datetime import datetime
 import hashlib
-from math import ceil
-import os
 import sys
 import time
 from modules.bp import bp
+from modules.bytenote import byte_notation
+from modules.createfolder import folder_logic
 from modules.ct import Ct
-from modules.decimals import decimal_notation
+from modules.multifile import file_multifunction
 import modules.options as options
+import modules.treewalk
 START_PROG_TIME = time.monotonic()
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def tree_walk_error_output(os_error: str):
-    """Receive errors from tree_walk function, color red, then send to output
-    either just log file or both log and elog files.
-
-    Args:
-        - os_error (str): os.walk onerror output
-    """
-    bp([os_error, Ct.RED], erl=2)
-
-    return
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def tree_walk():
-    """Tree walks the source folder and populates several variables
-
-    Returns:
-        - tuple:
-            - walk_time:      float of time it took to tree walk
-            - walk_folders:   list of folders from the tree walk
-            - walk_files:     list of files from the tree walk
-            - data_size:      total size of all files
-    """
-    try:
-        walk_time, walk_fol, walk_files, data_size = '', [], [], 0
-        num_folders, num_files = 0, 0
-        # create exdir and exfile lists
-        if args.exdir:
-            exdir = args.exdir.split(',')
-        if args.exfile:
-            exfile = args.exfile.split(',')
-        walk_start = time.monotonic()
-        for root, dirs, files, in os.walk(args.source,
-                                          topdown=True,
-                                          onerror=tree_walk_error_output):
-            # strip excluded directories and files
-            if args.exdir:
-                dirs[:] = [d for d in dirs if d not in exdir]
-            if args.exfile:
-                files[:] = [f for f in files if f not in exfile]
-            # populate the directory list
-            for d in dirs:
-                dir_fp = f'{root}/{d}'
-                walk_fol.append(dir_fp)
-                num_folders += 1
-            # poopulate the file list
-            for f in files:
-                file_fp = f'{root}/{f}'
-                walk_files.append(file_fp)
-                # get cumulative file size
-                try:
-                    f_info = os.stat(file_fp, follow_symlinks=False)
-                    data_size += f_info.st_size
-                    num_files += 1
-                except OSError as e:
-                    e_var = (f'Tree walk of source: {args.source}\n{e}')
-                    bp([e_var, Ct.RED], erl=2)
-        walk_stop = time.monotonic()
-        # calculate total tree walk time
-        walk_time = (walk_stop - walk_start)
-    except OSError as e:
-        e_var = f'tree walk failure: {args.source}\n{e}'
-        bp([e_var, Ct.RED], erl=2)
-
-    return walk_time, walk_fol, walk_files, data_size, num_folders, num_files
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def create_folder(folder_source: str):
-    """Create a folder on each call.
-
-    Args:
-        - folder_source (str): the folder to create
-
-    Returns:
-        - int: 0 is success; 1 is failure
-    """
-    # swap the target for the source in the string
-    folder_target = folder_source.replace(args.source, args.target)
-    try:
-        # create the folder
-        if not os.path.isdir(folder_target):
-            os.makedirs(folder_target)
-            # TODO adjust the folder date to match the source
-            # TODO adjust the folder permissions to match the source
-
-        return 0, folder_target
-
-    except OSError as e:
-        bp([f'create folder - {folder_target}\n\t{e}', Ct.RED], erl=2)
-
-        return 1, folder_target
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def file_multifunction(file_source: str, file_action: str):
-    """Copy or read the file with hashing.
-
-    Args:
-        - file_source (str): the file to copy or read
-        - file_action (str): either 'copy' or 'read'
-
-    Returns:
-        - tuple:
-            - file_rtime      read file timer
-            - file_wtime      write file timer
-            - hash_time       hash timer
-            - hash_hex        the hash hexadecimal
-            - file_target     the target file name
-            - file_size       the size of the source file
-    """
-    # swap the target for the source in the string
-    file_target = file_source.replace(args.source, args.target)
-    # hashlib function variable
-    hlib_var = (getattr(hashlib, args.hash)())
-    file_rtime, file_wtime, file_size, hash_time, hash_hex = 0, 0, 0, 0, ''
-    try:
-        read_blocks = args.blocksize * options.BLOCK_SIZE_FACTOR
-        # get the size of the file copied or read
-        f_info = os.stat(file_source, follow_symlinks=False)
-        file_size = f_info.st_size
-        file_loop = 0
-        f_loops = ceil(file_size / read_blocks)
-        update_loop = 1 if f_loops < 100 else int(f_loops / 100)
-        # target output variable
-        t_o = 'wb' if file_action == 'copy' else 'rb'
-        # fr is file read, fw is file write, fw open but ignored on read
-        with open(file_source, 'rb') as fr, open(file_target, t_o) as fw:
-            while True:
-                fr_start = time.monotonic()
-                # read source in blocks to prevent potential memory overload
-                f_chunk = fr.read(read_blocks)
-                fr_stop = time.monotonic()
-                # calculate time to read the file
-                file_rtime += (fr_stop - fr_start)
-                # this breaks the while loop when no more file chunks to read
-                if not f_chunk:
-                    if args.verbose == 3:
-                        print()
-                    break
-                h_start = time.monotonic()
-                # update the hash on each chunk
-                hlib_var.update(f_chunk)
-                h_stop = time.monotonic()
-                # calculate the time to hash the file
-                hash_time += (h_stop - h_start)
-                # skip this section on read hashing, otherwise copy the file
-                if file_action == 'copy':
-                    fw_start = time.monotonic()
-                    fw.write(f_chunk)
-                    fw_stop = time.monotonic()
-                    # calculate the time to write the file
-                    file_wtime += (fw_stop - fw_start)
-                # loop and stdout print a status of the current file processing
-                file_loop += 1
-                if file_loop % update_loop == 0:
-                    bp([f'\u001b[1000D{(file_loop / f_loops) * 100:.0f}%',
-                        Ct.BBLUE, ' | ', Ct.A, f'{file_source}', Ct.GREEN],
-                        inl=1, num=0, fls=1)
-            bp(['', Ct.A])
-        # convert the hash to hexadecimal
-        hh_start = time.monotonic()
-        if 'shake' in args.hash:
-            hash_hex = hlib_var.hexdigest(args.length)
-        else:
-            hash_hex = hlib_var.hexdigest()
-        hh_stop = time.monotonic()
-        # add the hex conversion to the has timer
-        hash_time += (hh_stop - hh_start)
-
-        return (0, file_rtime, file_wtime, hash_time, hash_hex, file_target,
-                file_size)
-
-    except OSError as e:
-        e_var = (f'with file {file_action}: {file_source}\n{e}')
-        bp([f'{e_var}', Ct.RED], erl=2)
-
-        return 1, file_source
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def main():
 
     try:
@@ -210,31 +29,22 @@ def main():
                 bp([f' {k}: {v} |', Ct.A], inl=1, log=0)
         bp(['', Ct.A], log=0)
         # execute the tree walk
-        tw_tup = tree_walk()
+        tw_timer = modules.treewalk.tree_walk()
+        tw_tup = tw_timer[2]
         folder_total = f'{tw_tup[4]:,}'
         file_total = f'{tw_tup[5]:,}'
-        file_size_total = decimal_notation(tw_tup[3])
+        file_size_total = byte_notation(tw_tup[3])
         # print out the tree walk data
         bp([f'Folders: {folder_total} | Files: {file_total} | Size: '
             f'{file_size_total[1]}', Ct.A])
-        # execute folder creation and time it
-        fo_time_start = time.monotonic()
-        folder_dict, folder_success, folder_failure = dd(int), 0, 0
-        for folder in tw_tup[1]:
-            # create each folder and get back 0 for success and 0 for error
-            folder_return = create_folder(folder)
-            # populate dict to track success or failure
-            folder_dict[folder] = folder_return[0]
-            if folder_return[0] == 0:
-                folder_success += 1
-                bp([f'Created: {folder_return[1]}', Ct.A], num=0)
-            else:
-                folder_failure += 1
-                bp([f'Failed!: {folder_return[1]}', Ct.RED], erl=2, num=0)
-        fo_time_stop = time.monotonic()
-        # calculate folder creation time
-        folder_time = f'{(fo_time_stop - fo_time_start):,.4f}'
-        f_time = fo_time_stop - fo_time_start
+
+        folder_return = folder_logic(tw_tup[1], args)
+        print(folder_return)
+
+        f_time = folder_return[1]
+        folder_time = f'{f_time:,.4f}'
+        folder_success = folder_return[2][0]
+        folder_failure = folder_return[2][1]
         # variables for file processing
         fc_rtime, fc_wtime, hc_time, fr_rtime, hr_time = 0, 0, 0, 0, 0
         file_success, file_failure, file_size_copied = 0, 0, 0
@@ -273,8 +83,8 @@ def main():
                    erl=2)
 
         # print out final copy stats
-        file_size_success = decimal_notation(file_size_copied)
-        file_size_failure = decimal_notation((tw_tup[3] - file_size_copied))
+        file_size_success = byte_notation(file_size_copied)
+        file_size_failure = byte_notation((tw_tup[3] - file_size_copied))
         hex_tot = hc_time + hr_time
         file_tot = int(fc_rtime + fc_wtime)
         bp([f'\n{" " * 16}Source    Target    FAILED         TIME', Ct.A])
@@ -288,10 +98,10 @@ def main():
            f'{val_failure:>10,}{hex_tot:>12,.4f}s (+{fr_rtime:,.4f}s)', Ct.A])
         end_time = time.monotonic()
         total_time = end_time - START_PROG_TIME
-        tft = (tw_tup[0] + f_time + fc_rtime + hc_time + fc_wtime +
+        tft = (tw_timer[1] + f_time + fc_rtime + hc_time + fc_wtime +
                fr_rtime + hr_time)
-        bp([f'\n{total_time:,.4f}s - Total Time\n{tw_tup[0]:,.4f}s - Tree Walk'
-            f' Time\n{folder_time:}s - FolderCreation Time\n{fc_rtime:,.4f}s'
+        bp([f'\n{total_time:,.4f}s - Total Time\n{tw_timer[1]:,.4f}s - Tree Wa'
+            f'lk Time\n{folder_time:}s - FolderCreation Time\n{fc_rtime:,.4f}s'
             f' - Source Read Time\n{hc_time:,.4f}s - Source Hash Validation '
             f'Time\n{fc_wtime:,.4f}s - Target Write Time\n{fr_rtime:,.4f}s - '
             f'Target Read Time\n{hr_time:,.4f}s - Target Hash Validation '
@@ -303,7 +113,7 @@ def main():
         sys.exit(1)
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 if __name__ == '__main__':
 
     # ~~~ #         title section

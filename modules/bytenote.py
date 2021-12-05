@@ -1,6 +1,8 @@
+"""bytenote v0.0.1"""
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-def decimal_notation(size: int, accuracy=2, notation=0):
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+def byte_notation(size: int, accuracy=2, notation=0):
     """Decimal Notation: take an integer, convert it to a string with the
     requested decimal accuracy, and append either single (default), double,
     or full word character notation.

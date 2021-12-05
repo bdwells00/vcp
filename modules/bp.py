@@ -9,7 +9,7 @@ from modules.ct import Ct
 import modules.options as options
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def bp(txt: list, erl=0, fil=1, fls=0, inl=0, log=1, num=1, veb=0):
     """Better Print: send output commands here instead of using print command.
     Txt must be sent in the form of pairs of strings in a list. The even
@@ -156,7 +156,7 @@ def bp(txt: list, erl=0, fil=1, fls=0, inl=0, log=1, num=1, veb=0):
     return
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def validate_args():
     """Validate the cli args before executing main()."""
     def file_check(f_to_c):
@@ -195,7 +195,7 @@ def validate_args():
     return
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def main():
 
     bp(['Entered main().', Ct.BMAGENTA], veb=3)
@@ -209,7 +209,7 @@ def main():
     bp(['End of main().', Ct.BMAGENTA], veb=1)
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 if __name__ == '__main__':
 
     print_tracker = options.print_tracker

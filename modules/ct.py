@@ -1,5 +1,7 @@
+"""ct v0.0.1"""
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 class Ct:
     """A class of constants used to color strings for console printing. Using
     the full Unicode escape sequence to allow both 8 and 24 bit color here."""

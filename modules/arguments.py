@@ -1,4 +1,5 @@
 
+
 import argparse
 import hashlib
 import os
@@ -6,7 +7,7 @@ from modules.ct import Ct
 import modules.version as version
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def get_args():
     """Get CLI arguments from argparse.
 
@@ -91,7 +92,7 @@ def get_args():
     return parser.parse_args()
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def validate_and_process_args(h_list: list):
     """Validate args
 
