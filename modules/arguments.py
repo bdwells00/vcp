@@ -93,7 +93,7 @@ def get_args():
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def validate_and_process_args(h_list: list):
+def validate_and_process_args():
     """Validate args
 
     - Args:
@@ -119,10 +119,12 @@ def validate_and_process_args(h_list: list):
                       'be between (and including) 1 and 1000000.')
         return 1, return_str, Ct.RED, 1, 2
     # ~~~ #         hash section
+    # create list of available hash algorithms
+    hash_list = [i for i in sorted(hashlib.algorithms_guaranteed)]
     if args.available:
         return_str = ('Available:\nHash:\t\tBlock size:\tDigest Length:\tHex '
                       'Length:\n')
-        for i in h_list:
+        for i in hash_list:
             if 'shake' not in i:
                 return_str += (f'{Ct.RED}{i:<16s}{Ct.A}'
                                f'{getattr(hashlib, i)().block_size:<16}'

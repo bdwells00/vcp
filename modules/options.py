@@ -17,8 +17,8 @@ args = modules.arguments.args
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def execute_args_validation(h_list: list):
+def execute_args_validation():
     """Placing in a function so validation only happens when called from
     the main program."""
 
-    return modules.arguments.validate_and_process_args(h_list)
+    return modules.arguments.validate_and_process_args()

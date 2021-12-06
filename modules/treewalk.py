@@ -1,5 +1,6 @@
 
 
+from collections import defaultdict as dd
 import os
 from modules.bp import bp
 from modules.ct import Ct
@@ -33,8 +34,8 @@ def tree_walk():
             - data_size:      total size of all files
     """
     try:
-        walk_fol, walk_files, data_size = [], [], 0
-        num_folders, num_files = 0, 0
+        walk_dirs_dict, walk_files_dict = dd(list), dd(list)
+        file_size, num_dirs, num_files = 0, 0, 0
         # create exdir and exfile lists
         if args.exdir:
             exdir = args.exdir.split(',')
@@ -50,23 +51,19 @@ def tree_walk():
                 files[:] = [f for f in files if f not in exfile]
             # populate the directory list
             for d in dirs:
-                dir_fp = f'{root}/{d}'
-                walk_fol.append(dir_fp)
-                num_folders += 1
+                dir_fullpath = os.path.join(root, d)
+                for i in os.stat(dir_fullpath):
+                    walk_dirs_dict[dir_fullpath].append(i)
+                num_dirs += 1
             # poopulate the file list
             for f in files:
-                file_fp = f'{root}/{f}'
-                walk_files.append(file_fp)
-                # get cumulative file size
-                try:
-                    f_info = os.stat(file_fp, follow_symlinks=False)
-                    data_size += f_info.st_size
-                    num_files += 1
-                except OSError as e:
-                    e_var = (f'Tree walk of source: {args.source}\n{e}')
-                    bp([e_var, Ct.RED], erl=2)
+                file_fullpath = os.path.join(root, f)
+                for i in os.stat(file_fullpath):
+                    walk_files_dict[file_fullpath].append(i)
+                num_files += 1
+                file_size += os.stat(file_fullpath).st_size
     except OSError as e:
-        e_var = f'tree walk failure: {args.source}\n{e}'
-        bp([e_var, Ct.RED], erl=2)
+        bp([f'tree walk failure: {args.source}\n{e}', Ct.RED], erl=2)
 
-    return 101, walk_fol, walk_files, data_size, num_folders, num_files
+    # return 101, walk_fol, walk_files, file_size, num_folders, num_files
+    return walk_dirs_dict, walk_files_dict, file_size, num_files, num_dirs
