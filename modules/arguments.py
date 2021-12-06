@@ -80,7 +80,8 @@ def get_args():
     parser.add_argument('--available',
                         help='print available hashes and exit',
                         action='store_true')
-    parser.add_argument('--verbose',
+    parser.add_argument('-v',
+                        '--verbose',
                         help='3 lvl incremental verbosity (-v, -vv, or -vvv)',
                         action='count',
                         default=0)

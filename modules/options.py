@@ -14,6 +14,8 @@ ver = modules.version.ver
 purpose = modules.version.__purpose__
 # args used by other modules
 args = modules.arguments.args
+# used to hold bytes copied so far
+bytes_done = 0
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #

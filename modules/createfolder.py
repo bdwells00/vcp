@@ -3,7 +3,7 @@
 import os
 from modules.ct import Ct
 from modules.bp import bp
-from modules.monotimer import mono_timer
+from modules.timer import perf_timer
 from modules.options import args
 
 
@@ -32,7 +32,7 @@ def create_folder(folder_source: str):
         return 1, folder_target
 
 
-@mono_timer
+@perf_timer
 def folder_logic(dir_dict: dict):
     """Controller logic for multiple folder creations.
 

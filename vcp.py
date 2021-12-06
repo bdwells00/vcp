@@ -3,7 +3,7 @@
 
 from datetime import datetime
 import sys
-import time
+from time import perf_counter
 from modules.bp import bp
 from modules.bytenote import byte_notation
 from modules.createfolder import folder_logic
@@ -11,7 +11,10 @@ from modules.ct import Ct
 from modules.multifile import file_logic
 import modules.options as options
 import modules.treewalk
-START_PROG_TIME = time.monotonic()
+START_PROG_TIME = perf_counter()
+
+
+start_time = datetime.now()
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -19,7 +22,6 @@ def main():
 
     try:
         # ~~~ #         initial display section
-        start_time = datetime.fromtimestamp(START_PROG_TIME)
         bp([f'Program start: {start_time}\nSource: ', Ct.A,
             f'{args.source}', Ct.GREEN, '\nTarget: ', Ct.A,
             f'{args.target}', Ct.GREEN])
@@ -62,7 +64,7 @@ def main():
         bp([f'Validation: {file_total:>10}{file_return["val_success"]:>10}'
             f'{file_return["val_failure"]:>10,}{hex_tot:>12,.4f}s (+'
             f'{file_return["val_read_time"]:,.4f}s)', Ct.A])
-        end_time = time.monotonic()
+        end_time = perf_counter()
         total_time = end_time - START_PROG_TIME
         tft = (tree_return[1] + f_time + file_return["read_time"] +
                file_return["hash_time"] + file_return["write_time"] +

@@ -5,12 +5,12 @@ from math import ceil
 import os
 from modules.ct import Ct
 from modules.bp import bp
-from modules.monotimer import mono_timer
+from modules.timer import perf_timer
 from modules.options import args, BLOCK_SIZE_FACTOR
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-@mono_timer
+@perf_timer
 def file_read(file_handle, file_blocks):
     """A simple function to read a part of a file in chunks. It is decorated
     with a timer to track duration.
@@ -26,7 +26,7 @@ def file_read(file_handle, file_blocks):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-@mono_timer
+@perf_timer
 def file_write(file_handle, file_blocks):
     """A simple function to write a part of a file in chunks. It is decorated
     with a timer to track duration.
@@ -42,8 +42,8 @@ def file_write(file_handle, file_blocks):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-@mono_timer
-def hash_processing(hlib, hash_action, file_blocks=0):
+@perf_timer
+def hash_processing(hash_action, hlib, file_blocks=0):
     """This hashes a block of a file (or whole file if small enough). The
     hashlib must be passed back and forth to maintain a single, consistant
     hashlib to update for files bigger than the block size. This will also
@@ -81,55 +81,67 @@ def file_multi(file_action: str, file_source: str):
         - file_action (str): either 'copy' or 'read'
         - file_source (str): the file to copy or read
     - Returns:
-        - [tuple]: various items. TODO convert section and return to dict.
+        - [tuple]: 11 k/v pair dict of actions taken, status, and output
     """
     # ~~~ #         variable section
+    # this var must be passed to other functions and back to maintain integrity
     hlib_var = (getattr(hashlib, args.hash)())
-    # TODO convert this section to a dict
-    file_target = file_source.replace(args.source, args.target)
-    file_rtime, file_wtime, file_size, hash_time = 0, 0, 0, 0
-    read_blocks = args.blocksize * BLOCK_SIZE_FACTOR
-    # get the size of the file copied or read
-    f_info = os.stat(file_source, follow_symlinks=False)
-    file_size = f_info.st_size
+    # dict to hold various updates for single return var
+    fm_dict = {
+        'failure': 0,
+        'file_action': file_action,
+        'file_source': file_source,
+        'file_target': file_source.replace(args.source, args.target),
+        'read_blocks': args.blocksize * BLOCK_SIZE_FACTOR,
+        'file_info': os.stat(file_source, follow_symlinks=False),
+        'file_size': os.stat(file_source, follow_symlinks=False).st_size,
+        'file_read_time': 0.0,
+        'file_write_time': 0.0,
+        'hash_time': 0.0,
+        'hash_hex': ''
+    }
     file_loop = 0
-    f_loops = ceil(file_size / read_blocks)
-    update_loop = 1 if f_loops < 100 else int(f_loops / 100)
-    # target output variable
-    t_o = 'wb' if file_action == 'copy' else 'rb'
+    # number of loops to execute
+    file_loops = ceil(fm_dict['file_size'] / fm_dict['read_blocks'])
+    # limit cli output to max of 100 loops to prevent slowdown
+    update_loop = 1 if file_loops < 100 else int(file_loops / 100)
+    # target open variable prevents overwriting target on read actions
+    target_open = 'wb' if file_action == 'copy' else 'rb'
     # ~~~ #         file manipulation section
     try:
-        # fr is file read, fw is file write, fw open but ignored on read
-        with open(file_source, 'rb') as fr, open(file_target, t_o) as fw:
+        # fr is file read, fw is file write; fw is opened but ignored on 'read'
+        with open(fm_dict['file_source'], 'rb') as fr,\
+             open(fm_dict['file_target'], target_open) as fw:
             while True:
                 # read source in blocks to prevent potential memory overload
-                f_chunk = file_read(fr, read_blocks)
-                file_rtime += f_chunk[1]
-                # this breaks the while loop when no more file chunks to read
+                f_chunk = file_read(fr, fm_dict['read_blocks'])
+                fm_dict['file_read_time'] += f_chunk[1]
+                # this breaks the while loop when file chunk is empty
                 if not f_chunk[2]:
                     break
                 # update the hash on each chunk
-                hash_temp = hash_processing(hlib_var, 'update', f_chunk[2])
-                hash_time += hash_temp[1]
+                hash_return = hash_processing('update', hlib_var, f_chunk[2])
+                fm_dict['hash_time'] += hash_return[1]
                 # skip this section on read hashing, otherwise copy the file
                 if file_action == 'copy':
-                    f_write_return = file_write(fw, f_chunk[2])
-                    file_wtime += f_write_return[1]
+                    write_return = file_write(fw, f_chunk[2])
+                    fm_dict['file_write_time'] += write_return[1]
                 # loop and stdout print a status of the current file processing
                 file_loop += 1
                 if file_loop % update_loop == 0:
-                    bp([f'\u001b[1000D{(file_loop / f_loops) * 100:.0f}%',
-                        Ct.BBLUE, ' | ', Ct.A, f'{file_source}', Ct.GREEN],
-                        inl=1, num=0, fls=1)
+                    bp([f'\u001b[1000D{(file_loop / file_loops) * 100:.0f}%',
+                        Ct.BBLUE, ' | ', Ct.A, f'{fm_dict["file_source"]}',
+                        Ct.GREEN], inl=1, num=0, fls=1)
             bp(['', Ct.A])
-            hash_temp = hash_processing(hlib_var, 'hex')
-            hash_time += hash_temp[1]
-        return (0, file_rtime, file_wtime, hash_time, hash_temp[2],
-                file_target, file_size)
+            hash_return = hash_processing('hex', hlib_var)
+            fm_dict['hash_time'] += hash_return[1]
+            fm_dict['hash_hex'] = hash_return[2]
+        return fm_dict
 
     except OSError as e:
         bp([f'with file {file_action}: {file_source}\n{e}', Ct.RED], erl=2)
-        return 1, file_source
+        fm_dict['failure'] = 1
+        return fm_dict
 
 
 def file_logic(file_dict):
@@ -143,7 +155,7 @@ def file_logic(file_dict):
         [dict]: 18 k/v pairs on the results of all actions taken
     """
     # ~~~ #             variables section
-    return_dict = {
+    fl_dict = {
         'success': 0,
         'success_source_list': [],
         'success_target_list': [],
@@ -167,43 +179,46 @@ def file_logic(file_dict):
     for file in file_dict:
         # ~~~ #         file copy section
         copy_return = file_multi('copy', file)
-        if copy_return[0] == 0:
-            return_dict['success'] += 1
-            return_dict['success_source_list'].append(file)
-            return_dict['read_time'] += copy_return[1]
-            return_dict['write_time'] += copy_return[2]
-            return_dict['hash_time'] += copy_return[3]
-            return_dict['hash_source_list'].append(copy_return[4])
-            return_dict['success_target_list'].append(copy_return[5])
-            return_dict['read_size'] += copy_return[6]
-            bp([f'Copied: {return_dict["success_source_list"][-1]}', Ct.GREEN],
-                num=0, veb=1)
-        else:
-            return_dict['failure'] += 1
-            return_dict['failure_list'].append(file)
-            bp([f'Failed Copy!: {return_dict["failure_list"][-1]}', Ct.RED],
+        if copy_return['failure'] == 0:
+            fl_dict['success'] += 1
+            fl_dict['success_source_list'].append(file)
+            fl_dict['read_time'] += copy_return['file_read_time']
+            fl_dict['write_time'] += copy_return['file_write_time']
+            fl_dict['hash_time'] += copy_return['hash_time']
+            fl_dict['hash_source_list'].append(copy_return['hash_hex'])
+            fl_dict['success_target_list'].append(copy_return['file_target'])
+            fl_dict['read_size'] += copy_return['file_size']
+            bp([f'Copied: {file}', Ct.GREEN], num=0, veb=1)
+        elif copy_return['failure'] == 1:
+            fl_dict['failure'] += 1
+            fl_dict['failure_list'].append(file)
+            bp([f'Failed Copy!: {fl_dict["failure_list"][-1]}', Ct.RED],
                 erl=2)
+        else:
+            bp([f'Unknown return: {copy_return["failure"]}.\n{copy_return}',
+                Ct.RED], erl=2, num=0)
         # ~~~ #         file validation section
-        val_return = file_multi('read', copy_return[5])
-        if copy_return[0] == 0 and val_return[0] == 0:
-            return_dict['val_read_time'] += val_return[1]
-            return_dict['val_hash_time'] += val_return[3]
-            return_dict['val_hash_list'].append(val_return[4])
-            if copy_return[4] == val_return[4]:
-                return_dict['val_success'] += 1
-                return_dict['val_success_list'].append(val_return[5])
-                return_dict['val_size'] += val_return[6]
+        val_return = file_multi('read', copy_return['file_target'])
+        if copy_return['failure'] == 0 and val_return['failure'] == 0:
+            fl_dict['val_read_time'] += val_return['file_read_time']
+            fl_dict['val_hash_time'] += val_return['hash_time']
+            fl_dict['val_hash_list'].append(val_return['hash_hex'])
+            if copy_return['hash_hex'] == val_return['hash_hex']:
+                fl_dict['val_success'] += 1
+                fl_dict['val_success_list'].append(val_return['hash_hex'])
+                fl_dict['val_size'] += val_return['file_size']
                 bp([f'Validated: source & target hex match.\n\t'
-                    f'{copy_return[4]}\n\t{val_return[4]}', Ct.GREEN], num=0,
-                    veb=1)
+                    f'{copy_return["hash_hex"]}\n\t{val_return["hash_hex"]}',
+                    Ct.GREEN], num=0, veb=1)
             else:
-                return_dict['val_failure'] += 1
-                return_dict['val_failure_list'].append(val_return[5])
-                bp([f'Source & target hex DO NOT MATCH!\n\t{copy_return[4]}'
-                    f'\n\t{val_return[4]}', Ct.RED], erl=2, num=0)
+                fl_dict['val_failure'] += 1
+                fl_dict['val_failure_list'].append(val_return["file_target"])
+                bp([f'Source & target hex DO NOT MATCH!\n\t'
+                    f'{copy_return["hash_hex"]}\n\t{val_return["hash_hex"]}',
+                    Ct.RED], erl=2, num=0)
         else:
-            return_dict['val_failure'] += 1
-            return_dict['val_failure_list'].append(copy_return[5])
-            bp([f'Failed reading copied file!: {copy_return[5]}', Ct.RED],
-                erl=2)
-    return return_dict
+            fl_dict['val_failure'] += 1
+            fl_dict['val_failure_list'].append(copy_return['file_target'])
+            bp([f'Failed reading copied file!: {copy_return["file_target"]}',
+                Ct.RED], erl=2)
+    return fl_dict

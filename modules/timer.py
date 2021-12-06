@@ -1,12 +1,12 @@
-"""monotimer v0.0.1"""
+"""timer v0.0.1"""
 
 
 from functools import wraps
-from time import monotonic, monotonic_ns
+from time import perf_counter, perf_counter_ns
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def mono_timer(func):
+def perf_timer(func):
     """The decorator time function. This is the encapsulating timer
         functionthat takes one argument, the child function, to calculate the
         duration of time.
@@ -34,18 +34,18 @@ def mono_timer(func):
         - Return:
             - wrapper_function: tuple
                 - 0: child function name
-                - 1: duration the time function ran using time.monotonic
+                - 1: duration the time function ran using time.perf_counter
                 - 2: the child function return
         """
-        t_start = monotonic()
+        t_start = perf_counter()
         return_var = func(*args, **kwargs)
-        t_stop = monotonic()
+        t_stop = perf_counter()
         return func.__name__, t_stop - t_start, return_var
     return wrapper_function
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def mono_ns_timer(func):
+def perf_ns_timer(func):
     """The decorator time function. This is the encapsulating timer
         functionthat takes one argument, the child function, to calculate the
         duration of time.
@@ -56,7 +56,7 @@ def mono_ns_timer(func):
     - Return:
         - wrapper_function: tuple
             - 0: child function name
-            - 1: duration the time function ran using time.monotonic_ns
+            - 1: duration the time function ran using time.perf_counter_ns
             - 2: the child function return
     """
     # ~~~ #         timer function section
@@ -76,8 +76,8 @@ def mono_ns_timer(func):
                 - 1: duration the time function ran using time.monotonic
                 - 2: the child function return
         """
-        t_start = monotonic_ns()
+        t_start = perf_counter_ns()
         return_var = func(*args, **kwargs)
-        t_required = monotonic_ns() - t_start
+        t_required = perf_counter_ns() - t_start
         return func.__name__, t_required, return_var
     return wrapper_function

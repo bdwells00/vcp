@@ -4,7 +4,7 @@ from collections import defaultdict as dd
 import os
 from modules.bp import bp
 from modules.ct import Ct
-from modules.monotimer import mono_timer
+from modules.timer import perf_timer
 from modules.options import args
 
 
@@ -22,7 +22,7 @@ def tree_walk_error_output(os_error: str):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-@mono_timer
+@perf_timer
 def tree_walk():
     """Tree walks the source folder and populates several variables
 
