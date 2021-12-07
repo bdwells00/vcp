@@ -2,15 +2,15 @@
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def byte_notation(size: int, accuracy=2, notation=0):
+def byte_notation(size: int, acc=2, ntn=0):
     """Decimal Notation: take an integer, convert it to a string with the
     requested decimal accuracy, and append either single (default), double,
     or full word character notation.
 
     Args:
         - size (int): the size to convert
-        - accuracy (int): how many decimal places to keep (default=2)
-        - precision (int): how many characters to return denoting multiplier
+        - acc (int): how many decimal places to keep (default=2)
+        - ntn (int): how many characters to return denoting multiplier
 
     Returns:
         - [tuple]: 0 = original size int unmodified; 1 = string for printing
@@ -25,7 +25,7 @@ def byte_notation(size: int, accuracy=2, notation=0):
     return_size_str = ''
     for key, value in size_dict.items():
         if (size / key) < 1000:
-            return_size_str = f'{size / key:,.{accuracy}f} {value[notation]}'
+            return_size_str = f'{size / key:,.{acc}f} {value[ntn]}'
             break
 
     return size, return_size_str

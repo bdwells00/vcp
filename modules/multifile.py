@@ -91,6 +91,8 @@ def file_multi(file_action: str, file_source: str):
         'failure': 0,
         'file_action': file_action,
         'file_source': file_source,
+        'short_source': (file_source if len(file_source) < 63 else
+                         f'...{file_source[(len(file_source) - 60):]}'),
         'file_target': file_source.replace(args.source, args.target),
         'read_blocks': args.blocksize * BLOCK_SIZE_FACTOR,
         'file_info': os.stat(file_source, follow_symlinks=False),
@@ -130,7 +132,7 @@ def file_multi(file_action: str, file_source: str):
                 file_loop += 1
                 if file_loop % update_loop == 0:
                     bp([f'\u001b[1000D{(file_loop / file_loops) * 100:.0f}%',
-                        Ct.BBLUE, ' | ', Ct.A, f'{fm_dict["file_source"]}',
+                        Ct.BBLUE, ' | ', Ct.A, f'{fm_dict["short_source"]}',
                         Ct.GREEN], inl=1, num=0, fls=1)
             bp(['', Ct.A])
             hash_return = hash_processing('hex', hlib_var)
@@ -207,9 +209,9 @@ def file_logic(file_dict):
                 fl_dict['val_success'] += 1
                 fl_dict['val_success_list'].append(val_return['hash_hex'])
                 fl_dict['val_size'] += val_return['file_size']
-                bp([f'Validated: source & target hex match.\n\t'
+                bp(['Validated: source & target hex match.\n\t', Ct.GREEN,
                     f'{copy_return["hash_hex"]}\n\t{val_return["hash_hex"]}',
-                    Ct.GREEN], num=0, veb=1)
+                    Ct.A], num=0, veb=1)
             else:
                 fl_dict['val_failure'] += 1
                 fl_dict['val_failure_list'].append(val_return["file_target"])
