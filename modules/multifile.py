@@ -6,7 +6,7 @@ import os
 import shutil
 from modules.ct import Ct
 from modules.bp import bp
-from modules.bytenote import byte_notation
+from modules.notations import byte_notation, time_notation
 from modules.timer import perf_timer
 from modules.options import args, BLOCK_SIZE_FACTOR
 
@@ -202,9 +202,9 @@ def file_logic(file_dict, num_files, size_files):
             '0', Ct.BBLUE, '/', Ct.A, f'{num_files}\n', Ct.BBLUE,
             'Validated: ', Ct.A, '0', Ct.BBLUE, '/', Ct.A, f'{num_files}',
             Ct.BBLUE, '\n     Size: ', Ct.A, '0', Ct.BBLUE, '/', Ct.A,
-            f'{size_files}', Ct.BBLUE, '\n Duration: ', Ct.A, '0.0000',
-            Ct.BBLUE, 's\n', Ct.A, 'Total Spd: ', Ct.A, '0\n', Ct.BBLUE],
-            log=0, inl=1, num=0, fil=0)
+            f'{size_files}', Ct.BBLUE, '\n Duration: ', Ct.A, '00:00:00',
+            Ct.BBLUE, '\nRemaining: ', Ct.A, '00:00:00\n', Ct.BBLUE,
+            'Total Spd: ', Ct.A, '0\n', Ct.BBLUE], log=0, inl=1, num=0, fil=0)
     for file in file_dict:
         # ~~~ #         file copy section
         # set 6 row status since file copies hidden
@@ -228,7 +228,7 @@ def file_logic(file_dict, num_files, size_files):
                 f'{copy_return}', Ct.RED], erl=2, num=0, con=c_tmp)
         # interim update for processed, success, and failure
         if args.verbose == 0:
-            bp(['\u001b[100D\u001b[7A', Ct.A], log=0, inl=1, num=0, fil=0)
+            bp(['\u001b[100D\u001b[8A', Ct.A], log=0, inl=1, num=0, fil=0)
             # bp(['', Ct.A], log=0, inl=1, num=0, fil=0)
             bp(['Processed: ', Ct.A,
                 f'{fr_dict["success"] + fr_dict["failure"]}', Ct.BBLUE, '/',
@@ -269,6 +269,8 @@ def file_logic(file_dict, num_files, size_files):
         t_var = (fr_dict['read_time'] + fr_dict['write_time'] +
                  fr_dict['hash_time'] + fr_dict['val_read_time'] +
                  fr_dict['val_hash_time'])
+        sp_var = fr_dict["val_size"] / t_var
+        r_var = size_files / sp_var
         if args.verbose == 0:
             bp(['Validated: ', Ct.A, f'{fr_dict["val_success"]}', Ct.BBLUE,
                 '/', Ct.A, f'{num_files}', Ct.BBLUE], inl=0, log=0, num=0,
@@ -277,11 +279,13 @@ def file_logic(file_dict, num_files, size_files):
                 f'{byte_notation(fr_dict["val_size"], ntn=1)[1]}', Ct.BBLUE,
                 '/', Ct.A, f'{byte_notation(size_files, ntn=1)[1]}        ',
                 Ct.BBLUE], inl=0, log=0, num=0, fil=0)
-            bp(['\u001b[100D Duration: ', Ct.A, f'{t_var:,.4f}', Ct.BBLUE,
-                's     ', Ct.A], inl=0, log=0, num=0, fil=0)
+            bp(['\u001b[100D Duration: ', Ct.A, f'{time_notation(t_var)}',
+                Ct.BBLUE], inl=0, log=0, num=0, fil=0)
+            bp(['\u001b[100DRemaining: ', Ct.A, f'{time_notation(r_var)}',
+                Ct.BBLUE], inl=0, log=0, num=0, fil=0)
             bp(['\u001b[100DTotal Spd: ', Ct.A,
-                f'{byte_notation(int(fr_dict["val_size"] / t_var), ntn=1)[1]}',
-                Ct.BBLUE, '/s      ', Ct.A], inl=0, log=0, num=0, fil=0)
+                f'{byte_notation(int(sp_var), ntn=1)[1]}',
+                Ct.BBLUE, '/s      ', Ct.A], inl=0, log=0, num=0, fil=0, fls=1)
     if args.verbose == 0:
         bp(['', Ct.A], fil=0)
     return fr_dict

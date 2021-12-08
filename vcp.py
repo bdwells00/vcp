@@ -6,7 +6,7 @@ import sys
 from time import perf_counter
 from modules.argsval import validate_and_process_args
 from modules.bp import bp
-from modules.bytenote import byte_notation
+from modules.notations import byte_notation, time_notation
 from modules.createfolder import folder_logic, folder_stat_reset
 from modules.ct import Ct
 from modules.freespace import free_space
@@ -67,8 +67,8 @@ def main():
         folder_success = folder_return[2]['success']
         folder_failure = folder_return[2]['failure']
         bp([f'Success: {folder_success}/{folder_total}\nFailure: '
-            f'{folder_failure}/{folder_total}\nDuration: {folder_time}s',
-            Ct.A])
+            f'{folder_failure}/{folder_total}\nDuration: '
+            f'{time_notation(f_time)}', Ct.A])
         bp([f'\n{"━" * 40}\n', Ct.A], log=0)
         # ~~~ #         file creation section
         file_return = file_logic(tw_tup[1], tw_tup[3], tw_tup[2])

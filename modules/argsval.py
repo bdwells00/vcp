@@ -36,24 +36,23 @@ def overwrite_check(f, operation):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def folder_validation(f):
+def folder_validation(f, location):
+    """Check if the folder exists. Exit if it does not.
+
+    Args:
+        f (string): folder name in string format
+        location (string): 'source' or 'target' being checked to provide 
+                           proper error output.
+    """    
     if not os.path.isdir(f):
-        bp([f'"--source {f}" does not exist.', Ct.RED], erl=2)
+        bp([f'"--{location} {f}" does not exist.', Ct.RED], erl=2)
         sys.exit(1)
     return
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def validate_and_process_args():
-    """Validate args
-
-    - Args:
-        - h_list (list): a list of all hashes available to python on the
-                         platform
-
-    - Returns:
-        - [dict]: exit code, and bp print info
-    """
+    """Validate the arparse args"""
     # ~~~ #         length and blocksize section
     if args.length < 1 or args.length > 128:
         bp([f'"--length {args.length}" invalid. Length must be between (and '
@@ -83,12 +82,12 @@ def validate_and_process_args():
         sys.exit(0)
     # ~~~ #         folder validation section
     if args.source:
-        folder_validation(args.source)
+        folder_validation(args.source, 'source')
     else:
         bp(['source path not provided.', Ct.RED], erl=2)
         sys.exit(1)
     if args.target:
-        folder_validation(args.source)
+        folder_validation(args.source, 'target')
     else:
         bp(['target path not provided.', Ct.RED], erl=2)
         sys.exit(1)
