@@ -3,8 +3,10 @@
 import hashlib
 from math import ceil
 import os
+import shutil
 from modules.ct import Ct
 from modules.bp import bp
+from modules.bytenote import byte_notation
 from modules.timer import perf_timer
 from modules.options import args, BLOCK_SIZE_FACTOR
 
@@ -74,6 +76,13 @@ def hash_processing(hash_action, hlib, file_blocks=0):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+@perf_timer
+def stat_copy(file_source: str, file_destination: str):
+    shutil.copystat(file_source, file_destination, follow_symlinks=False)
+    return
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def file_multi(file_action: str, file_source: str):
     """The main file read, write, and validation actions run from here.
 
@@ -81,7 +90,7 @@ def file_multi(file_action: str, file_source: str):
         - file_action (str): either 'copy' or 'read'
         - file_source (str): the file to copy or read
     - Returns:
-        - [tuple]: 11 k/v pair dict of actions taken, status, and output
+        - [tuple]: 12 k/v pair dict of actions taken, status, and output
     """
     # ~~~ #         variable section
     # this var must be passed to other functions and back to maintain integrity
@@ -120,6 +129,8 @@ def file_multi(file_action: str, file_source: str):
                 fm_dict['file_read_time'] += f_chunk[1]
                 # this breaks the while loop when file chunk is empty
                 if not f_chunk[2]:
+                    # bp([f'Source: {fm_dict["file_source"]}\nTarget: '
+                    #     f'{fm_dict["file_target"]}', Ct.A], con=0)
                     break
                 # update the hash on each chunk
                 hash_return = hash_processing('update', hlib_var, f_chunk[2])
@@ -133,8 +144,8 @@ def file_multi(file_action: str, file_source: str):
                 if file_loop % update_loop == 0:
                     bp([f'\u001b[1000D{(file_loop / file_loops) * 100:.0f}%',
                         Ct.BBLUE, ' | ', Ct.A, f'{fm_dict["short_source"]}',
-                        Ct.GREEN], inl=1, num=0, fls=1)
-            bp(['', Ct.A])
+                        Ct.GREEN], log=0, inl=1, num=0, fls=1, fil=0, veb=1)
+            bp(['', Ct.A], fil=0, veb=1)
             hash_return = hash_processing('hex', hlib_var)
             fm_dict['hash_time'] += hash_return[1]
             fm_dict['hash_hex'] = hash_return[2]
@@ -146,7 +157,7 @@ def file_multi(file_action: str, file_source: str):
         return fm_dict
 
 
-def file_logic(file_dict):
+def file_logic(file_dict, num_files, size_files):
     """The controller for the file_multi section. This initiates copies and
     validates the returns.
 
@@ -157,7 +168,11 @@ def file_logic(file_dict):
         [dict]: 18 k/v pairs on the results of all actions taken
     """
     # ~~~ #             variables section
-    fl_dict = {
+    # sets console output variable according to requested quiet variable
+    c_tmp = 0 if args.quiet else 1
+    # total duration var only used here
+    t_var = 0
+    fr_dict = {
         'success': 0,
         'success_source_list': [],
         'success_target_list': [],
@@ -178,49 +193,95 @@ def file_logic(file_dict):
         'val_size': 0
     }
     # ~~~ #             file processing section
+    # set initial space if verbose = 0
+    if args.verbose == 0:
+        bp(['Copy files...\n'
+            'Processed: ', Ct.A, '0', Ct.BBLUE, '/', Ct.A,
+            f'{num_files}\n', Ct.BBLUE, '  Success: ', Ct.A, '0', Ct.BBLUE,
+            '/', Ct.A, f'{num_files}\n', Ct.BBLUE, '  Failure: ', Ct.A,
+            '0', Ct.BBLUE, '/', Ct.A, f'{num_files}\n', Ct.BBLUE,
+            'Validated: ', Ct.A, '0', Ct.BBLUE, '/', Ct.A, f'{num_files}',
+            Ct.BBLUE, '\n     Size: ', Ct.A, '0', Ct.BBLUE, '/', Ct.A,
+            f'{size_files}', Ct.BBLUE, '\n Duration: ', Ct.A, '0.0000',
+            Ct.BBLUE, 's\n', Ct.A, 'Total Spd: ', Ct.A, '0\n', Ct.BBLUE],
+            log=0, inl=1, num=0, fil=0)
     for file in file_dict:
         # ~~~ #         file copy section
+        # set 6 row status since file copies hidden
         copy_return = file_multi('copy', file)
         if copy_return['failure'] == 0:
-            fl_dict['success'] += 1
-            fl_dict['success_source_list'].append(file)
-            fl_dict['read_time'] += copy_return['file_read_time']
-            fl_dict['write_time'] += copy_return['file_write_time']
-            fl_dict['hash_time'] += copy_return['hash_time']
-            fl_dict['hash_source_list'].append(copy_return['hash_hex'])
-            fl_dict['success_target_list'].append(copy_return['file_target'])
-            fl_dict['read_size'] += copy_return['file_size']
+            fr_dict['success'] += 1
+            fr_dict['success_source_list'].append(file)
+            fr_dict['read_time'] += copy_return['file_read_time']
+            fr_dict['write_time'] += copy_return['file_write_time']
+            fr_dict['hash_time'] += copy_return['hash_time']
+            fr_dict['hash_source_list'].append(copy_return['hash_hex'])
+            fr_dict['success_target_list'].append(copy_return['file_target'])
+            fr_dict['read_size'] += copy_return['file_size']
             bp([f'Copied: {file}', Ct.GREEN], num=0, veb=1)
         elif copy_return['failure'] == 1:
-            fl_dict['failure'] += 1
-            fl_dict['failure_list'].append(file)
-            bp([f'Failed Copy!: {fl_dict["failure_list"][-1]}', Ct.RED],
-                erl=2)
+            fr_dict['failure'] += 1
+            fr_dict['failure_list'].append(file)
+            bp([f'Failed Copy!: {file}', Ct.RED], erl=2, con=c_tmp)
         else:
-            bp([f'Unknown return: {copy_return["failure"]}.\n{copy_return}',
-                Ct.RED], erl=2, num=0)
+            bp([f'Unknown return: {copy_return["failure"]}.\n'
+                f'{copy_return}', Ct.RED], erl=2, num=0, con=c_tmp)
+        # interim update for processed, success, and failure
+        if args.verbose == 0:
+            bp(['\u001b[100D\u001b[7A', Ct.A], log=0, inl=1, num=0, fil=0)
+            # bp(['', Ct.A], log=0, inl=1, num=0, fil=0)
+            bp(['Processed: ', Ct.A,
+                f'{fr_dict["success"] + fr_dict["failure"]}', Ct.BBLUE, '/',
+                Ct.A, f'{num_files}', Ct.BBLUE], inl=0, log=0, num=0, fil=0)
+            bp(['  Success: ', Ct.A, f'{fr_dict["success"]}', Ct.BBLUE, '/',
+                Ct.A, f'{num_files}', Ct.BBLUE], inl=0, log=0, num=0, fil=0)
+            bp(['  Failure: ', Ct.A, f'{fr_dict["failure"]}', Ct.BBLUE, '/',
+                Ct.A, f'{num_files}', Ct.BBLUE], inl=0, log=0, num=0, fil=0)
+        # ~~~ #         file stat section
+        stat_return = stat_copy(file, copy_return['file_target'])
+        fr_dict['write_time'] += stat_return[1]
         # ~~~ #         file validation section
         val_return = file_multi('read', copy_return['file_target'])
         if copy_return['failure'] == 0 and val_return['failure'] == 0:
-            fl_dict['val_read_time'] += val_return['file_read_time']
-            fl_dict['val_hash_time'] += val_return['hash_time']
-            fl_dict['val_hash_list'].append(val_return['hash_hex'])
-            if copy_return['hash_hex'] == val_return['hash_hex']:
-                fl_dict['val_success'] += 1
-                fl_dict['val_success_list'].append(val_return['hash_hex'])
-                fl_dict['val_size'] += val_return['file_size']
+            fr_dict['val_read_time'] += val_return['file_read_time']
+            fr_dict['val_hash_time'] += val_return['hash_time']
+            fr_dict['val_hash_list'].append(val_return['hash_hex'])
+            if copy_return['hash_hex'] == val_return['hash_hex'] and\
+                    copy_return['file_size'] == val_return['file_size']:
+                fr_dict['val_success'] += 1
+                fr_dict['val_success_list'].append(val_return['hash_hex'])
+                fr_dict['val_size'] += val_return['file_size']
                 bp(['Validated: source & target hex match.\n\t', Ct.GREEN,
                     f'{copy_return["hash_hex"]}\n\t{val_return["hash_hex"]}',
                     Ct.A], num=0, veb=1)
             else:
-                fl_dict['val_failure'] += 1
-                fl_dict['val_failure_list'].append(val_return["file_target"])
+                fr_dict['val_failure'] += 1
+                fr_dict['val_failure_list'].append(val_return["file_target"])
                 bp([f'Source & target hex DO NOT MATCH!\n\t'
                     f'{copy_return["hash_hex"]}\n\t{val_return["hash_hex"]}',
-                    Ct.RED], erl=2, num=0)
+                    Ct.RED], erl=2, num=0, con=c_tmp)
         else:
-            fl_dict['val_failure'] += 1
-            fl_dict['val_failure_list'].append(copy_return['file_target'])
-            bp([f'Failed reading copied file!: {copy_return["file_target"]}',
-                Ct.RED], erl=2)
-    return fl_dict
+            fr_dict['val_failure'] += 1
+            fr_dict['val_failure_list'].append(copy_return['file_target'])
+            bp(['Failed reading copied file!: ',
+                f'{copy_return["file_target"]}', Ct.RED], erl=2, con=c_tmp)
+        # interim update for alidated, size, and duration
+        t_var = (fr_dict['read_time'] + fr_dict['write_time'] +
+                 fr_dict['hash_time'] + fr_dict['val_read_time'] +
+                 fr_dict['val_hash_time'])
+        if args.verbose == 0:
+            bp(['Validated: ', Ct.A, f'{fr_dict["val_success"]}', Ct.BBLUE,
+                '/', Ct.A, f'{num_files}', Ct.BBLUE], inl=0, log=0, num=0,
+                fil=0)
+            bp(['\u001b[100DVal. Size: ', Ct.A,
+                f'{byte_notation(fr_dict["val_size"], ntn=1)[1]}', Ct.BBLUE,
+                '/', Ct.A, f'{byte_notation(size_files, ntn=1)[1]}        ',
+                Ct.BBLUE], inl=0, log=0, num=0, fil=0)
+            bp(['\u001b[100D Duration: ', Ct.A, f'{t_var:,.4f}', Ct.BBLUE,
+                's     ', Ct.A], inl=0, log=0, num=0, fil=0)
+            bp(['\u001b[100DTotal Spd: ', Ct.A,
+                f'{byte_notation(int(fr_dict["val_size"] / t_var), ntn=1)[1]}',
+                Ct.BBLUE, '/s      ', Ct.A], inl=0, log=0, num=0, fil=0)
+    if args.verbose == 0:
+        bp(['', Ct.A], fil=0)
+    return fr_dict

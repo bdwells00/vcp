@@ -1,8 +1,6 @@
 
 
 import argparse
-import hashlib
-import os
 from modules.ct import Ct
 import modules.version as version
 
@@ -73,10 +71,10 @@ def get_args():
     parser.add_argument('--no-color',
                         help='don\'t colorize output',
                         action='store_true')
-    # parser.add_argument('--quiet',
-    #                     help='quiet mode surpresses all output except errors'
-    #                          ' and final summary',
-    #                     action='store_true')
+    parser.add_argument('--quiet',
+                        help='quiet mode surpresses most output including '
+                             'errors but keeps final summary',
+                        action='store_true')
     parser.add_argument('--available',
                         help='print available hashes and exit',
                         action='store_true')
@@ -91,86 +89,3 @@ def get_args():
                         version=f'{Ct.BBLUE}{version.ver}')
 
     return parser.parse_args()
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def validate_and_process_args():
-    """Validate args
-
-    - Args:
-        - h_list (list): a list of all hashes available to python on the
-                         platform
-
-    - Returns:
-        - [dict]: exit code, and bp print info
-    """
-    # ~~~ #         variables section
-    val_dict = {                # defaults for clean continue
-        'exit': 10,             # exit code, 10 = continue
-        'bp_list': ['', Ct.A],  # bp formated list to print
-        'bp_num': 1,               # bp num variable (print numbers blue)
-        'bp_erl': 0                # bp erl variable (1 = Warning, 2 = Error)
-    }
-    # ~~~ #         length and blocksize section
-    if args.length < 1 or args.length > 128:
-        val_dict['bp_list'] = [f'"--length {args.length}" invalid. Length must'
-                               ' be between (and including) 1 and 128.',
-                               Ct.RED]
-        val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 1, 1, 2
-        return val_dict
-    if args.blocksize < 1 or args.blocksize > 1000000:
-        val_dict['bp_list'] = [f'"--blocksize {args.blocksize}" invalid. '
-                               'Length must be between (and including) 1 and '
-                               '1000000.', Ct.RED]
-        val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 1, 1, 2
-        return val_dict
-    # ~~~ #         hash section
-    # create list of available hash algorithms
-    hash_list = [i for i in sorted(hashlib.algorithms_guaranteed)]
-    if args.available:
-        return_str = ('Available:\nHash:\t\tBlock size:\tDigest Length:\tHex '
-                      'Length:\n')
-        for i in hash_list:
-            if 'shake' not in i:
-                return_str += (f'{Ct.RED}{i:<16s}{Ct.A}'
-                               f'{getattr(hashlib, i)().block_size:<16}'
-                               f'{getattr(hashlib, i)().digest_size:<16}'
-                               f'{2 * getattr(hashlib, i)().digest_size:<16}\n'
-                               )
-            else:
-                return_str += (f'{Ct.RED}{i:<16s}{Ct.A}'
-                               f'{getattr(hashlib, i)().block_size:<16}'
-                               f'{args.length:<16}{2 * args.length:<16}\n')
-        val_dict['bp_list'] = [return_str, Ct.BBLUE]
-        val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 0, 0, 0
-        return val_dict
-    # ~~~ #         folder validation section
-    if args.source:
-        if not os.path.isdir(args.source):
-            val_dict['bp_list'] = [f'"--source {args.source}" does not exist.',
-                                   Ct.RED]
-            val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 1, 1, 2
-            return val_dict
-    else:
-        val_dict['bp_list'] = ['source path not provided.', Ct.RED]
-        val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 1, 1, 2
-        return val_dict
-    if args.target:
-        if not os.path.isdir(args.target):
-            val_dict['bp_list'] = [f'"--target {args.target}" does not exist.',
-                                   Ct.RED]
-            val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 1, 1, 2
-            return val_dict
-    else:
-        val_dict['bp_list'] = ['target path not provided.', Ct.RED]
-        val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 1, 1, 2
-        return val_dict
-    if args.source == args.target:
-        val_dict['bp_list'] = ['source and target cannot be the same.', Ct.RED]
-        val_dict['exit'], val_dict['bp_num'], val_dict['bp_erl'] = 1, 1, 2
-        return val_dict
-
-    return val_dict
-
-
-args = get_args()

@@ -52,14 +52,12 @@ def tree_walk():
             # populate the directory list
             for d in dirs:
                 dir_fullpath = os.path.join(root, d)
-                for i in os.stat(dir_fullpath):
-                    walk_dirs_dict[dir_fullpath].append(i)
+                walk_dirs_dict[dir_fullpath] = os.stat(dir_fullpath).st_size
                 num_dirs += 1
             # poopulate the file list
             for f in files:
                 file_fullpath = os.path.join(root, f)
-                for i in os.stat(file_fullpath):
-                    walk_files_dict[file_fullpath].append(i)
+                walk_files_dict[file_fullpath] = os.stat(file_fullpath).st_size
                 num_files += 1
                 file_size += os.stat(file_fullpath).st_size
     except OSError as e:

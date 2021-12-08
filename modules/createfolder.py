@@ -1,6 +1,8 @@
 
 
+from collections import defaultdict as dd
 import os
+import shutil
 from modules.ct import Ct
 from modules.bp import bp
 from modules.timer import perf_timer
@@ -32,6 +34,21 @@ def create_folder(folder_source: str):
         return 1, folder_target
 
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+def stat_copy(file_source: str, file_destination: str):
+    shutil.copystat(file_source, file_destination, follow_symlinks=False)
+    return
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+@perf_timer
+def folder_stat_reset(success_dict: dict):
+    for k, v in success_dict.items():
+        stat_copy(k, v)
+    return
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 @perf_timer
 def folder_logic(dir_dict: dict):
     """Controller logic for multiple folder creations.
@@ -46,22 +63,23 @@ def folder_logic(dir_dict: dict):
     # ~~~ #         variable section
     return_dict = {
         'success': 0,
-        'success_list': [],
+        'success_dict': dd(str),
         'failure': 0,
-        'failure_list': []
+        'failure_dict': dd(str)
     }
     # ~~~ #         dictionary iteration section
-    for k, v in dir_dict.items():
+    for k, _ in dir_dict.items():
         # create each folder and get back 0 for success or 1 for failure
         folder_return = create_folder(k)
         # populate dict to track success or failure
         if folder_return[0] == 0:
             return_dict['success'] += 1
-            return_dict['success_list'].append(folder_return[1])
+            return_dict['success_dict'][k] = folder_return[1]
+            stat_copy(k, folder_return[1])
             bp([f'Created: {folder_return[1]}', Ct.A], num=0, veb=1)
         else:
             return_dict['failure'] += 1
-            return_dict['failure_list'].append(folder_return[1])
+            return_dict['failure_dict'][k] = folder_return[1]
             bp([f'Failed!: {folder_return[1]}', Ct.RED], erl=2, num=0)
 
     return return_dict

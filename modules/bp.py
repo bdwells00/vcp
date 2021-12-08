@@ -10,7 +10,7 @@ import modules.options as options
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def bp(txt: list, erl=0, fil=1, fls=0, inl=0, log=1, num=1, veb=0):
+def bp(txt: list, con=1, erl=0, fil=1, fls=0, inl=0, log=1, num=1, veb=0):
     """Better Print: send output commands here instead of using print command.
     Txt must be sent in the form of pairs of strings in a list. The even
     strings ("0", "2", "4", etc.) contain the output text while the odd strings
@@ -27,6 +27,8 @@ def bp(txt: list, erl=0, fil=1, fls=0, inl=0, log=1, num=1, veb=0):
     Args:
         - txt (list): (required) must be pairs with the even entries a string
                       and odd sections the Ct.color to apply to that string.
+        - con  (int): (optional) 0 = no console output, 1 = console output.
+                      (default)
         - erl  (int): (optional) 0 = none (default), 1 = WARNING, 2 = ERROR:
                       auto pre-pends ERROR: or WARNING:, colors line Red, and
                       allows routing of only these to error log if requested.
@@ -67,7 +69,7 @@ def bp(txt: list, erl=0, fil=1, fls=0, inl=0, log=1, num=1, veb=0):
     if 'verbose' in args_dict:
         # if error logging set, veb ignored and will be printed
         if args_dict['verbose'] < veb and erl == 0:
-            return      # skip anything with higher verbosity than requested
+            con = 0      # skip console output but allow file output if desired
 
     # ~~~ #     validate txt list - verify it is in pairs
     txt_l = len(txt)
@@ -130,12 +132,12 @@ def bp(txt: list, erl=0, fil=1, fls=0, inl=0, log=1, num=1, veb=0):
             txt_out = file_out[:]
 
     # ~~~ #     console output section
-    if inl == 0:    # default with new line appended
+    if inl == 0 and con == 1:    # default with new line appended
         sys.stdout.write(f'{txt_out}\n')
         print_tracker += 1
-    elif inl == 1 and fls == 0:     # in-line with no flush
+    elif inl == 1 and fls == 0 and con == 1:     # in-line with no flush
         sys.stdout.write(txt_out)
-    elif inl == 1 and fls == 1:     # in-line with flush
+    elif inl == 1 and fls == 1 and con == 1:     # in-line with flush
         sys.stdout.write(txt_out)
         sys.stdout.flush()
 
