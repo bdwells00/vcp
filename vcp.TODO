@@ -1,0 +1,40 @@
+vcp TODO
+Update git readme.md
+
+-Enhancements
+	- check running permissions
+
+-Bufix:
+
+
+-Features:
+	--nosec			don't copy security
+	--secfix		don't copy anything, only correct security
+	--timefix		don't copy anything, only correct time
+	--sync			compare source and target, only copy missing files
+	--overwrite 	overwrite target files
+	--attributes	file and directory info to sync
+		access
+		created
+		modified
+	--continue		continue on error, how many to abort
+		-r:n		number of retries before moving on to the next file or folder
+		-w:n		how long to wait between retries
+		-a:n		how many overall failures before aborting
+	--copysec		copy security
+	--purge	(mirror)sync target with source including deleting files on target no longer on source
+	--sdd			sync target dir dates with source dates
+	--ondiskful		what to do if disk is full
+		abort		same as continue
+		retry
+		wait
+	-f 				prints full path of file
+	-s 				subdirectories (except empty)
+	-e 				all subdirectories including empty
+	-b				backup mode on windows
+	--move			delete source
+	
+	
+	
+	
+	

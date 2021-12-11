@@ -1,9 +1,6 @@
 """bytenote v0.0.2"""
 
 
-from math import ceil, floor
-
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 def byte_notation(size: int, acc=2, ntn=0):
     """Decimal Notation: take an integer, converts it to a string with the
@@ -30,40 +27,3 @@ def byte_notation(size: int, acc=2, ntn=0):
         if (size / key) < 1000:
             return_size_str = f'{size / key:,.{acc}f} {value[ntn]}'
             return size, return_size_str
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def time_notation(time_var: float, ntn='short'):
-    """Convert seconds and fractions of a second into human friendly notation.
-
-    - Args:
-        - time_var (float): the seconds to convert
-        - ntn (str, optional): 'short' returns 00:00:00, while 'long' returns
-                               0 hours, 0 minutes, and 0 seconds.
-                               Defaults to 'short'.
-
-    - Returns:
-        - [type]: [description]
-    """
-    s = time_var % 60 if time_var > 1 else 1
-    m = floor(time_var / 60)
-    h = floor(time_var / 360)
-    d = floor(time_var / 8640)
-    y = floor(time_var / 3155760)    # 365.25 days
-
-    if y > 0:
-        if ntn == 'short':
-            return f'{y:02d}:{d:02d}:{h:02d}:{m:02d}:{ceil(s)}'
-        elif ntn == 'long':
-            return (f'{y} years, {d} days,{h} hours, {m} months, and {s}'
-                    ' seconds')
-    elif d > 0:
-        if ntn == 'short':
-            return f'{d:02d}:{h:02d}:{m:02d}:{ceil(s):02d}'
-        elif ntn == 'long':
-            return f'{d} days, {h} hours, {m} months, and {s} seconds'
-    else:
-        if ntn == 'short':
-            return f'{h:02d}:{m:02d}:{ceil(s):02d}'
-        elif ntn == 'long':
-            return f'{h} hours, {m} minutes, and {s} seconds'
