@@ -60,6 +60,6 @@ def tree_walk():
                             stat_dict['num_files'] += 1
                             stat_dict['file_size'] += item.stat().st_size
     except OSError as e:
-        bp([f'tree walk failure: {args.source}\n{e}', Ct.RED], erl=2)
+        bp([f'tree walk failure: {args.source}\n{e}', Ct.RED], err=2)
 
     return walk_dirs_dict, walk_files_dict, stat_dict

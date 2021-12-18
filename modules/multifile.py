@@ -163,7 +163,7 @@ def file_multi(file_action: str, file_source: Path):
         return fm_dict
 
     except OSError as e:
-        bp([f'with file {file_action}: {file_source}\n{e}', Ct.RED], erl=2)
+        bp([f'with file {file_action}: {file_source}\n{e}', Ct.RED], err=2)
         fm_dict['failure'] = 1
         return fm_dict
 
@@ -236,10 +236,10 @@ def file_logic(file_dict: dict, stats_dict: dict):
         elif copy_return['failure'] == 1:
             fr_dict['failure'] += 1
             fr_dict['failure_list'].append(file)
-            bp([f'Failed Copy!: {file}', Ct.RED], erl=2, con=c_tmp)
+            bp([f'Failed Copy!: {file}', Ct.RED], err=2, con=c_tmp)
         else:
             bp([f'Unknown return: {copy_return["failure"]}.\n'
-                f'{copy_return}', Ct.RED], erl=2, num=0, con=c_tmp)
+                f'{copy_return}', Ct.RED], err=2, num=0, con=c_tmp)
         # interim update for processed, success, and failure
         if args.verbose == 0:
             bp(['\u001b[100D\u001b[8A', Ct.A], log=0, inl=1, num=0, fil=0)
@@ -273,12 +273,12 @@ def file_logic(file_dict: dict, stats_dict: dict):
                 fr_dict['val_failure_list'].append(val_return["file_target"])
                 bp([f'Source & target hex DO NOT MATCH!\n\t'
                     f'{copy_return["hash_hex"]}\n\t{val_return["hash_hex"]}',
-                    Ct.RED], erl=2, num=0, con=c_tmp)
+                    Ct.RED], err=2, num=0, con=c_tmp)
         else:
             fr_dict['val_failure'] += 1
             fr_dict['val_failure_list'].append(copy_return['file_target'])
             bp(['Failed reading copied file!: ',
-                f'{copy_return["file_target"]}', Ct.RED], erl=2, con=c_tmp)
+                f'{copy_return["file_target"]}', Ct.RED], err=2, con=c_tmp)
         # interim update for alidated, size, and duration
         t_var = (fr_dict['read_time'] + fr_dict['write_time'] +
                  fr_dict['hash_time'] + fr_dict['val_read_time'] +

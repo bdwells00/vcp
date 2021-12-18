@@ -24,10 +24,10 @@ def overwrite_check(f: str, operation: str):
         if f_path.is_file():
             check_append = input(question)
             if check_append.lower() == 'n':
-                bp(['Exiting', Ct.YELLOW], erl=1)
+                bp(['Exiting', Ct.YELLOW], err=1)
                 sys.exit(1)
             elif check_append.lower() != 'y':
-                bp([f'{check_append} is not "Y" or "N".', Ct.YELLOW], erl=1,
+                bp([f'{check_append} is not "Y" or "N".', Ct.YELLOW], err=1,
                    fil=0)
                 overwrite_check(f, operation)
     elif operation == 'folder':
@@ -36,10 +36,10 @@ def overwrite_check(f: str, operation: str):
         if any(f_path.iterdir()):
             check_overwrite = input(question)
             if check_overwrite.lower() == 'n':
-                bp(['Exiting', Ct.YELLOW], erl=1)
+                bp(['Exiting', Ct.YELLOW], err=1)
                 sys.exit(1)
             elif check_overwrite.lower() != 'y':
-                bp([f'{check_overwrite} is not "Y" or "N".', Ct.YELLOW], erl=1,
+                bp([f'{check_overwrite} is not "Y" or "N".', Ct.YELLOW], err=1,
                    fil=0)
                 overwrite_check(f, operation)
     return
@@ -56,7 +56,7 @@ def folder_validation(f: str, location: str):
     """
     file = Path(f)
     if not file.is_dir():
-        bp([f'"--{location} {f}" does not exist.', Ct.RED], erl=2)
+        bp([f'"--{location} {f}" does not exist.', Ct.RED], err=2)
         sys.exit(1)
     return
 
@@ -150,11 +150,11 @@ def get_args():
     # ~~~ #                 -length and blocksize-
     if args.length < 1 or args.length > 128:
         bp([f'"--length {args.length}" invalid. Length must be between (and '
-            'including) 1 and 128.', Ct.RED], erl=2)
+            'including) 1 and 128.', Ct.RED], err=2)
         sys.exit(1)
     if args.blocksize < 1 or args.blocksize > 1000000:
         bp([f'"--blocksize {args.blocksize}" invalid. Length must be between'
-            ' (and including) 1 and 1000000.', Ct.RED], erl=2)
+            ' (and including) 1 and 1000000.', Ct.RED], err=2)
         sys.exit(1)
 
     # ~~~ #                 -hash-
@@ -180,15 +180,15 @@ def get_args():
     if args.source:
         folder_validation(args.source, 'source')
     else:
-        bp(['source path not provided.', Ct.RED], erl=2)
+        bp(['source path not provided.', Ct.RED], err=2)
         sys.exit(1)
     if args.target:
         folder_validation(args.source, 'target')
     else:
-        bp(['target path not provided.', Ct.RED], erl=2)
+        bp(['target path not provided.', Ct.RED], err=2)
         sys.exit(1)
     if args.source == args.target:
-        bp(['source and target cannot be the same.', Ct.RED], erl=2)
+        bp(['source and target cannot be the same.', Ct.RED], err=2)
         sys.exit(1)
     # check if target is empty and confirm overwrite
     overwrite_check(args.target, 'folder')

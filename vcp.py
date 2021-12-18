@@ -1,4 +1,4 @@
-#!/usr/bin/python3-64 -X utf8
+#!/usr/bin/env python3
 
 
 from datetime import datetime, timedelta
@@ -57,7 +57,7 @@ def main():
             f'{folder_total} | Files: {file_total}\nTarget - Free: '
             f'{target_space_bytenote[1]:>10}', Ct.A])
         if tw_tup[2]["file_size"] >= target_space['free_bytes']:
-            bp(['not enough free space to copy all the data.', Ct.RED], erl=2)
+            bp(['not enough free space to copy all the data.', Ct.RED], err=2)
             sys.exit(1)
         bp([f'\n{"━" * 40}\n', Ct.A], log=0)
 
@@ -116,7 +116,7 @@ def main():
             f'{total_time - tft:,.4f}s - Program Overhead Time', Ct.A])
 
     except KeyboardInterrupt:
-        bp(['Ctrl+C pressed...\n', Ct.RED], erl=2)
+        bp(['Ctrl+C pressed...\n', Ct.RED], err=2)
         sys.exit(1)
 
 

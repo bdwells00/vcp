@@ -31,7 +31,7 @@ def create_folder(folder_source: str):
         return 0, folder_target
 
     except OSError as e:
-        bp([f'create folder - {folder_target}\n\t{e}', Ct.RED], erl=2)
+        bp([f'create folder - {folder_target}\n\t{e}', Ct.RED], err=2)
 
         return 1, folder_target
 
@@ -94,6 +94,6 @@ def folder_logic(dir_dict: dict):
         else:
             return_dict['failure'] += 1
             return_dict['failure_dict'][k] = folder_return[1]
-            bp([f'Failed!: {folder_return[1]}', Ct.RED], erl=2, num=0)
+            bp([f'Failed!: {folder_return[1]}', Ct.RED], err=2, num=0)
 
     return return_dict
