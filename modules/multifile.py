@@ -3,10 +3,10 @@
 from datetime import timedelta
 import hashlib
 from math import ceil
-import os
+from pathlib import Path
 import shutil
-from modules.ct import Ct
-from modules.bp import bp
+from betterprint.betterprint import bp
+from betterprint.colortext import Ct
 from modules.notations import byte_notation
 from modules.timer import perf_timer
 from modules.options import args, BLOCK_SIZE_FACTOR
@@ -64,11 +64,12 @@ def hash_processing(hash_action, hlib, file_blocks=0):
                      object,for 'hex' hash action, returns a hexadecimal
                      string.
     """
-    # ~~~ #         update section
+    # ~~~ #                 -update-
     if hash_action == 'update':
         hash_upd = hlib.update(file_blocks)
         return hash_upd
-    # ~~~ #         hex section
+
+    # ~~~ #                 -hex-
     elif hash_action == 'hex':
         if 'shake' in args.hash:
             return hlib.hexdigest(args.length)
@@ -78,13 +79,19 @@ def hash_processing(hash_action, hlib, file_blocks=0):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 @perf_timer
-def stat_copy(file_source: str, file_destination: str):
-    shutil.copystat(file_source, file_destination, follow_symlinks=False)
+def stat_copy(f_source: str, f_target: str):
+    """Copies the file details (time, permissions) from source to target.
+
+    - Args:
+        - f_source (str): source file
+        - f_target (str): target file
+    """
+    shutil.copystat(f_source, f_target, follow_symlinks=False)
     return
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def file_multi(file_action: str, file_source: str):
+def file_multi(file_action: str, file_source: Path):
     """The main file read, write, and validation actions run from here.
 
     - Args:
@@ -96,17 +103,20 @@ def file_multi(file_action: str, file_source: str):
     # ~~~ #         variable section
     # this var must be passed to other functions and back to maintain integrity
     hlib_var = (getattr(hashlib, args.hash)())
+    # need to convert to string to use replace, then back to Path
+    f_source = str(file_source)
+    f_target = f_source.replace(args.source, args.target)
     # dict to hold various updates for single return var
     fm_dict = {
         'failure': 0,
         'file_action': file_action,
         'file_source': file_source,
-        'short_source': (file_source if len(file_source) < 63 else
-                         f'...{file_source[(len(file_source) - 60):]}'),
-        'file_target': file_source.replace(args.source, args.target),
+        'short_source': (f_source if len(f_source) < 63 else
+                         f'...{f_source[(len(f_source) - 60):]}'),
+        'file_target': Path(f_target),
         'read_blocks': args.blocksize * BLOCK_SIZE_FACTOR,
-        'file_info': os.stat(file_source, follow_symlinks=False),
-        'file_size': os.stat(file_source, follow_symlinks=False).st_size,
+        'file_info': file_source.stat(follow_symlinks=False),
+        'file_size': file_source.stat(follow_symlinks=False).st_size,
         'file_read_time': 0.0,
         'file_write_time': 0.0,
         'hash_time': 0.0,
@@ -158,7 +168,7 @@ def file_multi(file_action: str, file_source: str):
         return fm_dict
 
 
-def file_logic(file_dict, num_files, size_files):
+def file_logic(file_dict: dict, stats_dict: dict):
     """The controller for the file_multi section. This initiates copies and
     validates the returns.
 
@@ -169,6 +179,8 @@ def file_logic(file_dict, num_files, size_files):
         [dict]: 18 k/v pairs on the results of all actions taken
     """
     # ~~~ #             variables section
+    num_files = stats_dict["num_files"]
+    size_files = stats_dict["file_size"]
     # sets console output variable according to requested quiet variable
     c_tmp = 0 if args.quiet else 1
     # total duration var only used here

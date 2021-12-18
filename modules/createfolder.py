@@ -1,10 +1,10 @@
 
 
 from collections import defaultdict as dd
-import os
+from pathlib import Path
 import shutil
-from modules.ct import Ct
-from modules.bp import bp
+from betterprint.betterprint import bp
+from betterprint.colortext import Ct
 from modules.timer import perf_timer
 from modules.options import args
 
@@ -13,19 +13,21 @@ from modules.options import args
 def create_folder(folder_source: str):
     """Create a folder on each call.
 
-    Args:
+    - Args:
         - folder_source (str): the folder to create
 
-    Returns:
+    - Returns:
         - int: 0 is success; 1 is failure
+        - Path: folder_target
     """
-    # ~~~ #         variable section
-    folder_target = folder_source.replace(args.source, args.target)
-    try:
-        # ~~~ #     folder creation section
-        if not os.path.isdir(folder_target):
-            os.makedirs(folder_target)
+    # ~~~ #                 -variables-
+    # need to convert to string to use replace, then back to Path
+    f_target = str(folder_source).replace(args.source, args.target)
+    folder_target = Path(f_target)
 
+    try:
+        # ~~~ #             -folder creation-
+        folder_target.mkdir(parents=True, exist_ok=True)
         return 0, folder_target
 
     except OSError as e:
@@ -35,14 +37,26 @@ def create_folder(folder_source: str):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def stat_copy(file_source: str, file_destination: str):
-    shutil.copystat(file_source, file_destination, follow_symlinks=False)
+def stat_copy(f_source: str, f_target: str):
+    """Copies the folder details (time, permissions) from source to target.
+
+    - Args:
+        - f_source (str): source folder
+        - f_target (str): target folder
+    """
+    shutil.copystat(f_source, f_target, follow_symlinks=False)
     return
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 @perf_timer
 def folder_stat_reset(success_dict: dict):
+    """After file copies, rerun the stat_copy because on Linux, a file write
+    updates the folder time. This will reset it to the source time.
+
+    - Args:
+        - success_dict (dict): a dictionary of all folders created
+    """
     for k, v in success_dict.items():
         stat_copy(k, v)
     return
@@ -53,12 +67,12 @@ def folder_stat_reset(success_dict: dict):
 def folder_logic(dir_dict: dict):
     """Controller logic for multiple folder creations.
 
-    Args:
-        dir_dict (dict): a dictionary of all folders to create. The key is the
-                         folder, the value is the os.stat of the folder.
+    - Args:
+        - dir_dict (dict): a dictionary of all folders to create. The key is
+                        the folder, the value is the os.stat of the folder.
 
-    Returns:
-        dict: return the success and failure stats along with lists of each.
+    - Returns:
+        - dict: return the success and failure stats along with lists of each.
     """
     # ~~~ #         variable section
     return_dict = {

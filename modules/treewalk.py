@@ -1,67 +1,65 @@
 
 
 from collections import defaultdict as dd
-import os
-from modules.bp import bp
-from modules.ct import Ct
+from pathlib import Path
+from betterprint.betterprint import bp
+from betterprint.colortext import Ct
 from modules.timer import perf_timer
 from modules.options import args
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-def tree_walk_error_output(os_error: str):
-    """Receive errors from tree_walk function, color red, then send to output
-    either just log file or both log and elog files.
-
-    Args:
-        - os_error (str): os.walk onerror output
-    """
-    bp([os_error, Ct.RED], erl=2)
-
-    return
-
-
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 @perf_timer
 def tree_walk():
-    """Tree walks the source folder and populates several variables
+    """Walk the source folder using pathlib. Populate 3 dicts, a folder dict,
+    a file dict, and a stats dict.
 
-    Returns:
-        - tuple:
-            - walk_time:      float of time it took to tree walk
-            - walk_folders:   list of folders from the tree walk
-            - walk_files:     list of files from the tree walk
-            - data_size:      total size of all files
+    - Returns:
+        - [dict]: k: folders; v: size
+        - [dict]: k: files; v: size
+        - [dict]:
+            'file_size'
+            'num_dirs'
+            'num_files'
     """
     try:
+        # ~~~ #             -variables-
         walk_dirs_dict, walk_files_dict = dd(list), dd(list)
-        file_size, num_dirs, num_files = 0, 0, 0
+        stat_dict = {'file_size': 0, 'num_dirs': 0, 'num_files': 0}
         # create exdir and exfile lists
         if args.exdir:
             exdir = args.exdir.split(',')
         if args.exfile:
             exfile = args.exfile.split(',')
-        for root, dirs, files, in os.walk(args.source,
-                                          topdown=True,
-                                          onerror=tree_walk_error_output):
-            # strip excluded directories and files
-            if args.exdir:
-                dirs[:] = [d for d in dirs if d not in exdir]
-            if args.exfile:
-                files[:] = [f for f in files if f not in exfile]
-            # populate the directory list
-            for d in dirs:
-                dir_fullpath = os.path.join(root, d)
-                walk_dirs_dict[dir_fullpath] = os.stat(dir_fullpath).st_size
-                num_dirs += 1
-            # poopulate the file list
-            for f in files:
-                file_fullpath = os.path.join(root, f)
-                walk_files_dict[file_fullpath] = os.stat(file_fullpath).st_size
-                num_files += 1
-                file_size += os.stat(file_fullpath).st_size
+        p = Path(args.source)
+
+        # ~~~ #             -rglob-
+        for item in p.rglob('*'):
+            if item.is_dir():
+                # add folders if no folder exclusions
+                if not args.exdir:
+                    walk_dirs_dict[item] = item.stat().st_size
+                    stat_dict['num_dirs'] += 1
+                else:
+                    # add folders if the exclusion is not in the folder path
+                    for z in exdir:
+                        if z not in item:
+                            walk_dirs_dict[item] = item.stat().st_size
+                            stat_dict['num_dirs'] += 1
+            else:
+                # add files if no file exclusions
+                if not args.exfile:
+                    walk_files_dict[item] = item.stat().st_size
+                    stat_dict['num_files'] += 1
+                    stat_dict['file_size'] += item.stat().st_size
+                else:
+                    # add files if the exclusion is not in the folder path
+                    for z in exfile:
+                        if z not in item:
+                            walk_files_dict[item] = item.stat().st_size
+                            stat_dict['num_files'] += 1
+                            stat_dict['file_size'] += item.stat().st_size
     except OSError as e:
         bp([f'tree walk failure: {args.source}\n{e}', Ct.RED], erl=2)
 
-    # return 101, walk_fol, walk_files, file_size, num_folders, num_files
-    return walk_dirs_dict, walk_files_dict, file_size, num_files, num_dirs
+    return walk_dirs_dict, walk_files_dict, stat_dict

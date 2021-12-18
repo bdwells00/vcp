@@ -5,11 +5,10 @@ from datetime import datetime, timedelta
 from math import floor
 import sys
 from time import perf_counter
-from modules.argsval import validate_and_process_args
-from modules.bp import bp
+from betterprint.betterprint import bp, bp_dict
 from modules.notations import byte_notation
 from modules.createfolder import folder_logic, folder_stat_reset
-from modules.ct import Ct
+from betterprint.colortext import Ct
 from modules.freespace import free_space
 from modules.multifile import file_logic
 import modules.options as options
@@ -24,7 +23,7 @@ start_time = datetime.now()
 def main():
 
     try:
-        # ~~~ #         initial display section
+        # ~~~ #             -init display-
         bp([f'\t{options.copyright}\n\t{options.license_info}\n{"━" * 40}',
             Ct.A], veb=2)
         bp([f'Program start: {start_time}\nSource: ', Ct.A, f'{args.source}',
@@ -41,13 +40,15 @@ def main():
                 else:
                     bp([f' {k}: {v} |', Ct.A], inl=1, log=0)
         bp([f'\n\n{"━" * 40}\n', Ct.A], log=0)
-        # ~~~ #         tree walk section
+
+        # ~~~ #             -tree walk-
         tree_return = modules.treewalk.tree_walk()
         tw_tup = tree_return[2]
-        folder_total = f'{tw_tup[4]:,}'
-        file_total = f'{tw_tup[3]:,}'
-        file_size_total = byte_notation(tw_tup[2], ntn=1)
-        # ~~~ #         free space section
+        folder_total = f'{tw_tup[2]["num_dirs"]:,}'
+        file_total = f'{tw_tup[2]["num_files"]:,}'
+        file_size_total = byte_notation(tw_tup[2]["file_size"], ntn=1)
+
+        # ~~~ #             -free space-
         target_space = free_space(args.target)
         target_space_bytenote = byte_notation(target_space['free_bytes'],
                                               ntn=1)
@@ -55,11 +56,12 @@ def main():
         bp([f'Source - Size: {file_size_total[1]:>10} | Folders: '
             f'{folder_total} | Files: {file_total}\nTarget - Free: '
             f'{target_space_bytenote[1]:>10}', Ct.A])
-        if tw_tup[2] >= target_space['free_bytes']:
+        if tw_tup[2]["file_size"] >= target_space['free_bytes']:
             bp(['not enough free space to copy all the data.', Ct.RED], erl=2)
             sys.exit(1)
         bp([f'\n{"━" * 40}\n', Ct.A], log=0)
-        # ~~~ #         folder creation section
+
+        # ~~~ #             -folder creation-
         bp(['Create folders...', Ct.A])
         folder_return = folder_logic(tw_tup[0])
 
@@ -71,19 +73,22 @@ def main():
             f'{folder_failure}/{folder_total}\nDuration: '
             f'{timedelta(seconds=floor(f_time))}', Ct.A])
         bp([f'\n{"━" * 40}\n', Ct.A], log=0)
-        # ~~~ #         file creation section
-        file_return = file_logic(tw_tup[1], tw_tup[3], tw_tup[2])
+
+        # ~~~ #             -file creation-
+        file_return = file_logic(tw_tup[1], tw_tup[2])
 
         file_size_success = byte_notation(file_return["val_size"], ntn=1)
-        file_size_failure = byte_notation(tw_tup[2] - file_return["val_size"],
-                                          ntn=1)
+        file_size_failure = byte_notation(tw_tup[2]["file_size"] -
+                                          file_return["val_size"], ntn=1)
         hex_tot = file_return["hash_time"] + file_return["val_hash_time"]
         file_tot = int(file_return['read_time'] + file_return["write_time"])
         bp([f'\n{"━" * 40}\n', Ct.A], log=0)
-        # ~~~ #         folder stat reset section
+
+        # ~~~ #             -folder stat reset-
         folder_reset = folder_stat_reset(folder_return[2]['success_dict'])
         f_time += folder_reset[1]
-        # ~~~ #         final display section
+
+        # ~~~ #             -final display-
         bp([f'\n{" " * 16}Source    Target    FAILED         TIME', Ct.A])
         bp([f'   Folders: {folder_total:>10}{folder_success:>10,}'
             f'{folder_failure:>10,}{folder_time:>12s}s', Ct.A])
@@ -118,13 +123,20 @@ def main():
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 if __name__ == '__main__':
 
-    # ~~~ #         title section
+    # ~~~ #                 -title-
     bp([f'{options.ver} - {options.purpose}\n', Ct.BBLUE])
-    # ~~~ #         args section
+
+    # ~~~ #                 -args-
     args = options.args
-    bp(['calling options.execute_args_validation().', Ct.BMAGENTA],
-        veb=2, num=0)
-    validate_and_process_args()
-    # ~~~ #         main section
+
+    # ~~~ #                 -variables-
+    bp_dict['verbose'] = args.verbose
+    bp_dict['date_log'] = args.date_log
+    bp_dict['log_file'] = args.log_file
+    bp_dict['error_log_file'] = args.error_log_file
+    bp_dict['color'] = 0 if args.no_color else 1
+    bp_dict['quiet'] = args.quiet
+
+    # ~~~ #                 -main-
     bp(['calling main().', Ct.BMAGENTA], veb=2, num=0)
     main()

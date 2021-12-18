@@ -14,7 +14,7 @@ ver = version.ver
 purpose = version.__purpose__
 copyright = f'Copyright ©️ 2021, {version.__author__}'
 license_info = version.__license__
-# args used by other modules
-args = arguments.get_args()
 # used to hold bytes copied so far
 bytes_done = 0
+# global args
+args = arguments.get_args()
